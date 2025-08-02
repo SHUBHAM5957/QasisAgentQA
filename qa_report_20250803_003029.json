@@ -1,17 +1,25 @@
 {
   "test_info": {
     "target_website": "http://52.66.221.29:3000/",
-    "test_date": "2025-08-02T22:46:22.699176",
+    "test_date": "2025-08-03T00:29:16.951793",
     "test_type": "Comprehensive QA Testing"
   },
   "summary": {
-    "total_issues": 7,
-    "critical_issues": 0,
-    "high_issues": 1,
+    "total_issues": 9,
+    "critical_issues": 1,
+    "high_issues": 2,
     "medium_issues": 5,
     "low_issues": 1
   },
   "issues": [
+    {
+      "type": "error",
+      "category": "api",
+      "description": "API endpoint is not accessible - Connection refused. Make sure the server is running on localhost:8080. Error: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/sanitize (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000021A91A80D10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
+      "severity": "critical",
+      "tester": "FunctionalTester",
+      "test_category": "functional"
+    },
     {
       "type": "security_vulnerability",
       "category": "missing_security_headers",
@@ -67,6 +75,14 @@
       "severity": "low",
       "tester": "NonFunctionalTester",
       "test_category": "non_functional"
+    },
+    {
+      "type": "connectivity_issue",
+      "category": "api_unreachable",
+      "description": "Cannot connect to API endpoint: http://localhost:8080/api/sanitize",
+      "severity": "high",
+      "tester": "NonFunctionalTester",
+      "test_category": "non_functional"
     }
   ],
   "recommendations": [
@@ -79,6 +95,17 @@
         "Implement HTTPS with proper SSL/TLS configuration",
         "Add Content Security Policy (CSP) headers",
         "Implement input validation and sanitization for all user inputs"
+      ]
+    },
+    {
+      "category": "Functionality",
+      "priority": "high",
+      "description": "Fix functional issues to ensure proper website operation",
+      "actions": [
+        "Fix broken links and navigation issues",
+        "Implement proper form validation",
+        "Test all user flows thoroughly",
+        "Ensure API endpoints are working correctly"
       ]
     },
     {

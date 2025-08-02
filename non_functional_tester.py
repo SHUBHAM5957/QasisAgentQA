@@ -3,12 +3,14 @@ import time
 import json
 from bs4 import BeautifulSoup
 from typing import List, Dict, Any
-from config import TARGET_WEBSITE, API_ENDPOINT
+from config import TARGET_WEBSITE, API_URL, API_ENDPOINT, TEST_API_DATA
 
 class NonFunctionalTester:
     def __init__(self):
         self.test_results = []
         self.base_url = TARGET_WEBSITE
+        self.api_url = API_URL
+        self.api_endpoint = f"{API_URL.rstrip('/')}/{API_ENDPOINT.lstrip('/')}"
         
     def measure_performance(self):
         """Measure website performance metrics"""
@@ -238,18 +240,23 @@ class NonFunctionalTester:
         print("🔌 Testing API security...")
         
         try:
-            # Test with malformed data
-            malformed_data = {
+            # Test with the sample data from config
+            test_data = TEST_API_DATA
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+            
+            print(f"Testing API endpoint: {self.api_endpoint}")
+            
+            # Test with malformed XSS data
+            xss_data = {
                 "content": "<script>alert('XSS')</script>",
                 "invalid_field": "test"
             }
             
-            headers = {
-                'Content-Type': 'application/json',
-                'Origin': 'http://localhost:3000'
-            }
-            
-            response = requests.post(API_ENDPOINT, json=malformed_data, headers=headers, timeout=30)
+            response = requests.post(self.api_endpoint, json=xss_data, headers=headers, timeout=30)
             
             # Check if API properly handles malformed input
             if response.status_code == 400:
@@ -265,6 +272,8 @@ class NonFunctionalTester:
                             "description": "API may be vulnerable to XSS attacks (script tags not sanitized)",
                             "severity": "high"
                         })
+                    else:
+                        print("✅ API properly sanitizes XSS content")
                 except:
                     pass
             else:
@@ -274,9 +283,55 @@ class NonFunctionalTester:
                     "description": f"API returned unexpected status code for malformed input: {response.status_code}",
                     "severity": "medium"
                 })
+            
+            # Test with the sample test data
+            print("Testing with sample log data...")
+            response = requests.post(self.api_endpoint, json=test_data, headers=headers, timeout=30)
+            
+            if response.status_code == 200:
+                try:
+                    result = response.json()
+                    # Check if sensitive data is properly sanitized
+                    sensitive_patterns = ['password=', 'api_key=', 'token=', 'aws_access_key', 'aws_secret_access_key']
+                    found_sensitive = []
+                    
+                    for pattern in sensitive_patterns:
+                        if pattern.lower() in str(result).lower():
+                            found_sensitive.append(pattern)
+                    
+                    if found_sensitive:
+                        self.test_results.append({
+                            "type": "security_vulnerability",
+                            "category": "data_sanitization",
+                            "description": f"API may not be properly sanitizing sensitive data: {', '.join(found_sensitive)}",
+                            "severity": "high"
+                        })
+                    else:
+                        print("✅ API properly sanitizes sensitive data")
+                        
+                except Exception as e:
+                    self.test_results.append({
+                        "type": "error",
+                        "category": "api_response",
+                        "description": f"Failed to parse API response: {str(e)}",
+                        "severity": "medium"
+                    })
+            else:
+                self.test_results.append({
+                    "type": "api_issue",
+                    "category": "response_code",
+                    "description": f"API returned status code {response.status_code} for test data",
+                    "severity": "medium"
+                })
                 
         except requests.exceptions.ConnectionError:
             print("⚠️ API endpoint not accessible for security testing")
+            self.test_results.append({
+                "type": "connectivity_issue",
+                "category": "api_unreachable",
+                "description": f"Cannot connect to API endpoint: {self.api_endpoint}",
+                "severity": "high"
+            })
         except Exception as e:
             self.test_results.append({
                 "type": "error",
@@ -285,15 +340,54 @@ class NonFunctionalTester:
                 "severity": "medium"
             })
     
+    def test_cors_policy(self):
+        """Test CORS policy configuration"""
+        print("🌐 Testing CORS policy...")
+        
+        try:
+            # Test preflight request
+            headers = {
+                'Origin': 'http://localhost:3000',
+                'Access-Control-Request-Method': 'POST',
+                'Access-Control-Request-Headers': 'Content-Type'
+            }
+            
+            response = requests.options(self.api_endpoint, headers=headers, timeout=30)
+            
+            if 'Access-Control-Allow-Origin' in response.headers:
+                allowed_origin = response.headers['Access-Control-Allow-Origin']
+                if allowed_origin == '*':
+                    self.test_results.append({
+                        "type": "security_vulnerability",
+                        "category": "cors_wildcard",
+                        "description": "CORS policy allows all origins (*) - potential security risk",
+                        "severity": "medium"
+                    })
+                else:
+                    print(f"✅ CORS properly configured for origin: {allowed_origin}")
+            else:
+                self.test_results.append({
+                    "type": "configuration_issue",
+                    "category": "cors_missing",
+                    "description": "CORS headers not found - may cause cross-origin request issues",
+                    "severity": "low"
+                })
+                
+        except Exception as e:
+            print(f"⚠️ CORS testing failed: {str(e)}")
+    
     def run_non_functional_tests(self):
         """Run all non-functional tests"""
         print("🚀 Starting Non-Functional Testing...")
+        print(f"Target Website: {self.base_url}")
+        print(f"API Endpoint: {self.api_endpoint}")
         
         self.measure_performance()
         self.security_scan()
         self.accessibility_audit()
         self.test_responsiveness()
         self.test_api_security()
+        self.test_cors_policy()
         
         print(f"✅ Non-functional testing completed. Found {len(self.test_results)} issues.")
-        return self.test_results 
+        return self.test_results

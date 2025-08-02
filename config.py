@@ -11,7 +11,9 @@ BROWSER_HEADLESS = os.getenv("BROWSER_HEADLESS", "true").lower() == "true"
 BROWSER_TIMEOUT = int(os.getenv("BROWSER_TIMEOUT", "30"))
 
 # API endpoint for testing
-API_ENDPOINT = "http://localhost:8080/api/sanitize"
+
+API_URL = "http://localhost:8080/"
+API_ENDPOINT = "api/sanitize"
 
 # Test data for API testing
 TEST_API_DATA = {
