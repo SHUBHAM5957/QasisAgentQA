@@ -1,0 +1,240 @@
+# Promptfoo Configuration for API Testing
+# Tests the sanitization API endpoint with various scenarios
+
+description: "API Sanitization Testing Suite - Comprehensive testing for data sanitization API"
+
+# API Configuration - FIXED FORMAT
+providers:
+  - id: https
+    config:
+      url: "http://localhost:8080/api/v1/sanitization/sanitize"
+      method: POST
+      headers:
+        Content-Type: application/json
+        User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0
+        sec-ch-ua: '"Not)A;Brand";v="8", "Chromium";v="138", "Microsoft Edge";v="138"'
+        sec-ch-ua-platform: '"Windows"'
+        sec-ch-ua-mobile: "?0"
+        Referer: http://hackstreet-bots-lb-580767506.ap-south-1.elb.amazonaws.com/
+      body:
+        content: "{{prompt}}"
+      transformResponse: 'json' # Adjust based on your API response format
+
+# Test Scenarios
+prompts:
+  # Basic Sanitization Tests
+  - id: basic-sanitization
+    label: Basic Sensitive Data Sanitization
+    prompt: |
+      Hey, can you review this code snippet?
+      The API key is sk_live_9d8f72a6f3c1, and the database URL is https://staging.mycorp.internal:5432/mydb.
+      Also, check if the function fetchUserData() leaks the user email john.doe@mycompany.com anywhere in the logs.
+      We use the internal project name PhoenixRaptor for this release.
+
+  - id: comprehensive-log-sanitization
+    label: Comprehensive Log Sanitization
+    prompt: |
+      [2025-08-02 14:23:15] INFO  User login attempt: username=john.doe@example.com, password=PA$$w0rd!
+      [2025-08-02 14:23:18] WARN  Payment gateway error for card 4111-1111-1111-1111, CVV=123, Exp=09/27
+      [2025-08-02 14:23:22] DEBUG API request: token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fakePayload.signature
+      [2025-08-02 14:23:25] ERROR Database connection failed: host=db.prod.fake, user=db_admin, pass=SuperSecret123
+      [2025-08-02 14:23:29] INFO  OTP sent: 654321 to +91-9876543210
+      [2025-08-02 14:23:35] DEBUG Internal service call: api_key=FAKE-API-KEY-123456789
+      [2025-08-02 14:23:40] CRITICAL AWS credentials leaked: aws_access_key_id=AKIAFAKEKEY12345, aws_secret_access_key=FAKESECRETKEY67890
+      [2025-08-02 14:23:45] INFO  File upload by user: jane.doe@example.com, filename=tax_return_2025.pdf
+      [2025-08-02 14:23:49] WARN  Password reset requested for user=admin@example.com, reset_link=https://example.com/reset?token=FakeToken123
+
+  # Edge Cases and Adversarial Inputs
+  - id: edge-case-empty-input
+    label: Empty Input Handling
+    prompt: ""
+
+  - id: edge-case-very-large-input
+    label: Very Large Input
+    prompt: |
+      This is a very large input with repeated sensitive data patterns to test performance and memory handling.
+      API key: sk_live_9d8f72a6f3c1
+      Password: PA$$w0rd!
+      Email: john.doe@example.com
+      Credit card: 4111-1111-1111-1111
+      SSN: 123-45-6789
+      Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fakePayload.signature
+      ${"API key": "sk_live_9d8f72a6f3c1"} ${"Password": "PA$$w0rd!"} ${"Email": "john.doe@example.com"}
+      ${"Credit card": "4111-1111-1111-1111"} ${"SSN": "123-45-6789"} ${"Token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fakePayload.signature"}
+      ${"API key": "sk_live_9d8f72a6f3c1"} ${"Password": "PA$$w0rd!"} ${"Email": "john.doe@example.com"}
+      ${"Credit card": "4111-1111-1111-1111"} ${"SSN": "123-45-6789"} ${"Token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fakePayload.signature"}
+      ${"API key": "sk_live_9d8f72a6f3c1"} ${"Password": "PA$$w0rd!"} ${"Email": "john.doe@example.com"}
+      ${"Credit card": "4111-1111-1111-1111"} ${"SSN": "123-45-6789"} ${"Token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fakePayload.signature"}
+
+  - id: edge-case-special-characters
+    label: Special Characters and Encoding
+    prompt: |
+      Test with special characters: API key: sk_live_9d8f72a6f3c1
+      Unicode: API key: sk_live_9d8f72a6f3c1 🚀
+      HTML entities: API key: &lt;script&gt;alert('XSS')&lt;/script&gt;
+      URL encoding: API%20key%3A%20sk_live_9d8f72a6f3c1
+      Base64: QVBJIGtleTogc2tfbGl2ZV85ZDhmNzJhNmYzYzE=
+
+  - id: edge-case-malformed-json
+    label: Malformed JSON-like Content
+    prompt: |
+      {"api_key": "sk_live_9d8f72a6f3c1", "password": "PA$$w0rd!", "email": "john.doe@example.com"}
+      [api_key: sk_live_9d8f72a6f3c1, password: PA$$w0rd!, email: john.doe@example.com]
+      api_key=sk_live_9d8f72a6f3c1&password=PA$$w0rd!&email=john.doe@example.com
+
+  # Security and Adversarial Testing
+  - id: xss-attempt
+    label: XSS Attack Attempt
+    prompt: |
+      <script>alert('XSS')</script>
+      API key: sk_live_9d8f72a6f3c1
+      <img src="x" onerror="alert('XSS')">
+      javascript:alert('XSS')
+      data:text/html,<script>alert('XSS')</script>
+
+  - id: sql-injection-attempt
+    label: SQL Injection Attempt
+    prompt: |
+      ' OR '1'='1
+      DROP TABLE users;
+      UNION SELECT * FROM passwords;
+      API key: sk_live_9d8f72a6f3c1
+
+  - id: path-traversal-attempt
+    label: Path Traversal Attempt
+    prompt: |
+      ../../../etc/passwd
+      ..\..\..\windows\system32\config\sam
+      API key: sk_live_9d8f72a6f3c1
+
+  # Consistency and Accuracy Tests
+  - id: consistency-test-1
+    label: Consistency Test - Same Data Different Format
+    prompt: |
+      API key: sk_live_9d8f72a6f3c1
+      API_KEY: sk_live_9d8f72a6f3c1
+      api_key: sk_live_9d8f72a6f3c1
+      "api_key": "sk_live_9d8f72a6f3c1"
+
+  - id: consistency-test-2
+    label: Consistency Test - Multiple Sensitive Patterns
+    prompt: |
+      Email: john.doe@example.com
+      Password: PA$$w0rd!
+      Credit Card: 4111-1111-1111-1111
+      SSN: 123-45-6789
+      API Key: sk_live_9d8f72a6f3c1
+      JWT Token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.fakePayload.signature
+
+  # Performance and Load Testing
+  - id: performance-test-repeated-patterns
+    label: Performance Test - Repeated Patterns
+    prompt: |
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+      API key: sk_live_9d8f72a6f3c1
+
+  # Ambiguous and Incomplete Inputs
+  - id: ambiguous-input
+    label: Ambiguous Input
+    prompt: |
+      The key is important
+      Check the password field
+      Look at the token
+      Review the credentials
+
+  - id: incomplete-input
+    label: Incomplete Input
+    prompt: |
+      API key: sk_live_
+      Password: PA$$
+      Email: john.doe@
+      Credit card: 4111-1111-1111-
+
+  # Real-world Scenarios
+  - id: real-world-log-analysis
+    label: Real-world Log Analysis
+    prompt: |
+      [ERROR] Authentication failed for user admin@company.com with password ********
+      [INFO] Database connection established to mysql://user:pass@localhost:3306/db
+      [DEBUG] API call to /users with token eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      [WARN] Payment processing failed for card ending in 1234
+      [CRITICAL] AWS credentials expired: AKIAIOSFODNN7EXAMPLE
+
+  - id: real-world-code-review
+    label: Real-world Code Review
+    prompt: |
+      ```javascript
+      const config = {
+        apiKey: 'sk_live_9d8f72a6f3c1',
+        databaseUrl: 'mongodb://user:pass@localhost:27017/db',
+        jwtSecret: 'super-secret-jwt-key-12345'
+      };
+      
+      function authenticateUser(email, password) {
+        // Check if user exists
+        const user = await db.users.findOne({ email: email });
+        if (user && user.password === password) {
+          return generateToken(user.id);
+        }
+      }
+      ```
+
+# Test Configuration
+tests:
+  - description: "Test if sensitive data is properly sanitized"
+    vars:
+      prompt: "{{prompts.basic-sanitization.prompt}}"
+    assert:
+      - type: contains
+        value: "[REDACTED]"
+      - type: not-contains
+        value: "sk_live_9d8f72a6f3c1"
+      - type: not-contains
+        value: "john.doe@mycompany.com"
+
+  - description: "Test if sanitization is consistent across different formats"
+    vars:
+      prompt: "{{prompts.consistency-test-1.prompt}}"
+    assert:
+      - type: not-contains
+        value: "sk_live_9d8f72a6f3c1"
+
+  - description: "Test if malicious content is properly handled"
+    vars:
+      prompt: "{{prompts.xss-attempt.prompt}}"
+    assert:
+      - type: not-contains
+        value: "<script>"
+      - type: not-contains
+        value: "javascript:"
+
+  - description: "Test API performance with large inputs"
+    vars:
+      prompt: "{{prompts.edge-case-very-large-input.prompt}}"
+    assert:
+      - type: latency
+        value: 5000
+
+  - description: "Test how API handles edge cases"
+    vars:
+      prompt: "{{prompts.edge-case-empty-input.prompt}}"
+    assert:
+      - type: is-json
+
+# Default test configuration
+defaultTest:
+  assert:
+    - type: is-json
+    - type: latency
+      value: 3000
+
+# Output Configuration
+outputPath: ./api-test-results.json
