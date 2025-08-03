@@ -5,15 +5,15 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Configuration
-TARGET_WEBSITE = os.getenv("TARGET_WEBSITE", "http://52.66.221.29:3000/")
+TARGET_WEBSITE = os.getenv("TARGET_WEBSITE", "http://hackstreet-bots-lb-580767506.ap-south-1.elb.amazonaws.com/")
 OPENAI_API_KEY = os.getenv("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")
 BROWSER_HEADLESS = os.getenv("BROWSER_HEADLESS", "true").lower() == "true"
 BROWSER_TIMEOUT = int(os.getenv("BROWSER_TIMEOUT", "30"))
 
 # API endpoint for testing
 
-API_URL = "http://localhost:8080/"
-API_ENDPOINT = "api/sanitize"
+API_URL = "http://hackstreet-bots-lb-580767506.ap-south-1.elb.amazonaws.com"
+API_ENDPOINT = "/api/v1/sanitization/sanitize"
 
 # Test data for API testing
 TEST_API_DATA = {

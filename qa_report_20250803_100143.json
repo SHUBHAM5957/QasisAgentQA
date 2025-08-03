@@ -1,48 +1,24 @@
 {
   "test_info": {
-    "target_website": "http://52.66.221.29:3000/",
-    "test_date": "2025-08-03T00:29:16.951793",
+    "target_website": "http://hackstreet-bots-lb-580767506.ap-south-1.elb.amazonaws.com/",
+    "test_date": "2025-08-03T10:00:57.846965",
     "test_type": "Comprehensive QA Testing"
   },
   "summary": {
     "total_issues": 9,
-    "critical_issues": 1,
-    "high_issues": 2,
-    "medium_issues": 5,
-    "low_issues": 1
+    "critical_issues": 0,
+    "high_issues": 3,
+    "medium_issues": 3,
+    "low_issues": 2
   },
   "issues": [
     {
-      "type": "error",
+      "type": "success",
       "category": "api",
-      "description": "API endpoint is not accessible - Connection refused. Make sure the server is running on localhost:8080. Error: HTTPConnectionPool(host='localhost', port=8080): Max retries exceeded with url: /api/sanitize (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000021A91A80D10>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))",
-      "severity": "critical",
+      "description": "API endpoint responded with status 200",
+      "severity": "info",
       "tester": "FunctionalTester",
       "test_category": "functional"
-    },
-    {
-      "type": "security_vulnerability",
-      "category": "missing_security_headers",
-      "description": "Missing X-Frame-Options header (clickjacking protection)",
-      "severity": "medium",
-      "tester": "NonFunctionalTester",
-      "test_category": "non_functional"
-    },
-    {
-      "type": "security_vulnerability",
-      "category": "missing_security_headers",
-      "description": "Missing X-Content-Type-Options header (MIME sniffing protection)",
-      "severity": "medium",
-      "tester": "NonFunctionalTester",
-      "test_category": "non_functional"
-    },
-    {
-      "type": "security_vulnerability",
-      "category": "missing_security_headers",
-      "description": "Missing X-XSS-Protection header (XSS protection)",
-      "severity": "medium",
-      "tester": "NonFunctionalTester",
-      "test_category": "non_functional"
     },
     {
       "type": "security_vulnerability",
@@ -77,10 +53,34 @@
       "test_category": "non_functional"
     },
     {
-      "type": "connectivity_issue",
-      "category": "api_unreachable",
-      "description": "Cannot connect to API endpoint: http://localhost:8080/api/sanitize",
+      "type": "security_vulnerability",
+      "category": "xss",
+      "description": "API may be vulnerable to XSS attacks (script tags not sanitized)",
       "severity": "high",
+      "tester": "NonFunctionalTester",
+      "test_category": "non_functional"
+    },
+    {
+      "type": "security_vulnerability",
+      "category": "data_sanitization",
+      "description": "API may not be properly sanitizing sensitive data patterns: password=, pass=, api_key=, token=, aws_access_key, aws_secret_access_key, CVV=, card , OTP ",
+      "severity": "high",
+      "tester": "NonFunctionalTester",
+      "test_category": "non_functional"
+    },
+    {
+      "type": "configuration_issue",
+      "category": "cors_missing",
+      "description": "CORS headers not found - may cause cross-origin request issues",
+      "severity": "low",
+      "tester": "NonFunctionalTester",
+      "test_category": "non_functional"
+    },
+    {
+      "type": "security_vulnerability",
+      "category": "rate_limiting",
+      "description": "API does not appear to implement rate limiting",
+      "severity": "medium",
       "tester": "NonFunctionalTester",
       "test_category": "non_functional"
     }
